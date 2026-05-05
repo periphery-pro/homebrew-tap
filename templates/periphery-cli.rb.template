@@ -1,0 +1,35 @@
+class PeripheryCli < Formula
+  desc "Periphery"
+  homepage "https://periphery.pro"
+  version "{{VERSION}}"
+
+  on_macos do
+    if Hardware::CPU.arm?
+      url "https://github.com/periphery-pro/cli-releases/releases/download/{{TAG}}/periphery-pro_{{VERSION}}_macos_arm64.zip"
+      sha256 "{{MACOS_ARM64_SHA256}}"
+    else
+      url "https://github.com/periphery-pro/cli-releases/releases/download/{{TAG}}/periphery-pro_{{VERSION}}_macos_x86_64.zip"
+      sha256 "{{MACOS_X86_64_SHA256}}"
+    end
+  end
+
+  on_linux do
+    if Hardware::CPU.arm?
+      url "https://github.com/periphery-pro/cli-releases/releases/download/{{TAG}}/periphery-pro_{{VERSION}}_linux_arm64.zip"
+      sha256 "{{LINUX_ARM64_SHA256}}"
+    else
+      url "https://github.com/periphery-pro/cli-releases/releases/download/{{TAG}}/periphery-pro_{{VERSION}}_linux_x86_64.zip"
+      sha256 "{{LINUX_X86_64_SHA256}}"
+    end
+  end
+
+  conflicts_with "periphery"
+
+  def install
+    bin.install "periphery"
+  end
+
+  test do
+    system "#{bin}/periphery version"
+  end
+end
