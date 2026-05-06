@@ -27,6 +27,7 @@ class PeripheryCli < Formula
 
   def install
     bin.install "periphery"
+    bin.install Dir["libIndexStore.*"]
   end
 
   test do
