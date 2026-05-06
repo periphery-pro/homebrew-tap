@@ -1,4 +1,4 @@
-# Periphery Pro Homebrew Tap
+# Periphery Homebrew Tap
 
 This tap installs Periphery from prebuilt binary archives.
 
