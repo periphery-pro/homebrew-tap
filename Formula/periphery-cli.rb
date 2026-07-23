@@ -26,42 +26,30 @@ class PeripheryCli < Formula
   conflicts_with "periphery"
 
   def install
-    bin.install "periphery"
-    bin.install Dir["libIndexStore.*"]
-  end
+    if OS.mac?
+      odie <<~EOS unless MacOS::CLT.installed?
+        Periphery requires the Xcode Command Line Tools at #{MacOS::CLT::PKG_PATH}.
+        Install them with:
+          xcode-select --install
+      EOS
 
-  def post_install
-    return unless OS.mac?
-
-    periphery_exe = bin/"periphery"
-
-    # Match bundled libIndexStore to how `periphery` is actually signed after Brew's
-    # install/relocate pass. If Brew re-signed the main binary ad hoc, downgrade the
-    # dylib the same way so Team IDs match — we cannot apply Developer ID without the
-    # maintainer key on the user's machine. If the binary still carries Developer ID,
-    # leave the dylibs alone (they already match the release tarball).
-    return unless periphery_adhoc_signed?(periphery_exe)
-
-    dylibs = Dir["#{bin}/libIndexStore*.dylib"].sort
-    return if dylibs.empty?
-
-    system "codesign", "--sign", "-", "--force",
-           "--preserve-metadata=entitlements,requirements,flags,runtime", *dylibs
-  end
-
-  def periphery_adhoc_signed?(executable)
-    require "open3"
-    stdout, stderr, status = Open3.capture3("codesign", "-dv", executable.to_s)
-    text = "#{stderr}#{stdout}"
-    return false if text.strip.empty?
-    return true if /\bSignature=\s*adhoc\b/.match?(text)
-    return false if /\bAuthority=\s*Developer ID\b/.match?(text)
-    return true if /\bTeamIdentifier=\s*not set\b/.match?(text)
-
-    status.success? && !/\bAuthority=/.match?(text)
+      bin.install "periphery"
+      MachO::Tools.add_rpath bin/"periphery", "#{MacOS::CLT::PKG_PATH}/usr/lib"
+      system "codesign", "--force", "--sign", "-",
+             "--preserve-metadata=entitlements,flags,runtime", bin/"periphery"
+    else
+      bin.install "periphery"
+      bin.install Dir["libIndexStore.*"]
+    end
   end
 
   test do
-    system "#{bin}/periphery version"
+    system bin/"periphery", "version"
+
+    if OS.mac?
+      assert_includes (bin/"periphery").rpaths, "#{MacOS::CLT::PKG_PATH}/usr/lib"
+      refute_path_exists bin/"libIndexStore.dylib"
+      system "codesign", "--verify", "--strict", bin/"periphery"
+    end
   end
 end
