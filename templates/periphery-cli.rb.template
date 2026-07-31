@@ -2,6 +2,7 @@ class PeripheryCli < Formula
   desc "Periphery"
   homepage "https://periphery.pro"
   version "{{VERSION}}"
+  license :cannot_represent
 
   on_macos do
     if Hardware::CPU.arm?
@@ -41,10 +42,14 @@ class PeripheryCli < Formula
       bin.install "periphery"
       bin.install Dir["libIndexStore.*"]
     end
+
+    doc.install "LICENSE.md", "THIRD_PARTY_NOTICES.txt"
   end
 
   test do
     system bin/"periphery", "version"
+    assert_path_exists doc/"LICENSE.md"
+    assert_path_exists doc/"THIRD_PARTY_NOTICES.txt"
 
     if OS.mac?
       assert_includes (bin/"periphery").rpaths, "#{MacOS::CLT::PKG_PATH}/usr/lib"
