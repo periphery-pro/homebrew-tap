@@ -1,26 +1,26 @@
 class PeripheryCli < Formula
   desc "Periphery"
   homepage "https://periphery.pro"
-  version "1.0.0.beta.4"
+  version "1.0.0.beta.5"
   license :cannot_represent
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.4/periphery-cli_1.0.0.beta.4_macos_arm64.zip"
-      sha256 "973c99188ec867c70350ff93c07a65fbaa5879d36ff8c39858b7a24ccf43a95e"
+      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.5/periphery-cli_1.0.0.beta.5_macos_arm64.zip"
+      sha256 "eac4488284b62664dd7994fb61adde6d787a2e31fdd6ec3f4fc2c71e2b0f768c"
     else
-      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.4/periphery-cli_1.0.0.beta.4_macos_x86_64.zip"
-      sha256 "b87faa32e34be3804e099d1a5c3191c7716df376b8fb0c2e7d94e887e82cbf9a"
+      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.5/periphery-cli_1.0.0.beta.5_macos_x86_64.zip"
+      sha256 "a9a474ec078e25c9e4a4b105933cfb3b41df19af8db27b643532a7d9387fdae9"
     end
   end
 
   on_linux do
     if Hardware::CPU.arm?
-      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.4/periphery-cli_1.0.0.beta.4_linux_arm64.zip"
-      sha256 "91e9bf3496ce1b85e051b0cb76c33a7c5b826ac340366e7a7cea1d771481778e"
+      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.5/periphery-cli_1.0.0.beta.5_linux_arm64.zip"
+      sha256 "17ef961769a465c5bd38f6255be68cf9c320dbf371c9799bd2f866e188d58bcc"
     else
-      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.4/periphery-cli_1.0.0.beta.4_linux_x86_64.zip"
-      sha256 "55200150e3d8a06d79b3109059b3d05edafaed406604e7242446e178d97f6e93"
+      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.5/periphery-cli_1.0.0.beta.5_linux_x86_64.zip"
+      sha256 "85bb4c7a6df4585f8d6c8705fc2f03aa7d1b6c085c74ec0823531353f6d6d208"
     end
   end
 
