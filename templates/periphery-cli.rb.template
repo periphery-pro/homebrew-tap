@@ -27,6 +27,9 @@ class PeripheryCli < Formula
   conflicts_with "periphery"
 
   def install
+    libexec.install "periphery", "retention.map"
+    bin.install_symlink libexec/"periphery"
+
     if OS.mac?
       odie <<~EOS unless MacOS::CLT.installed?
         Periphery requires the Xcode Command Line Tools at #{MacOS::CLT::PKG_PATH}.
@@ -34,13 +37,12 @@ class PeripheryCli < Formula
           xcode-select --install
       EOS
 
-      bin.install "periphery"
-      MachO::Tools.add_rpath bin/"periphery", "#{MacOS::CLT::PKG_PATH}/usr/lib"
+      libexec.install "libswiftDemangle.dylib"
+      MachO::Tools.add_rpath libexec/"periphery", "#{MacOS::CLT::PKG_PATH}/usr/lib"
       system "codesign", "--force", "--sign", "-",
-             "--preserve-metadata=entitlements,flags,runtime", bin/"periphery"
+             "--preserve-metadata=entitlements,flags,runtime", libexec/"periphery"
     else
-      bin.install "periphery"
-      bin.install Dir["libIndexStore.*"]
+      libexec.install Dir["libIndexStore.*", "libswiftDemangle.*"]
     end
 
     doc.install "LICENSE.md", "THIRD_PARTY_NOTICES.txt"
@@ -48,13 +50,16 @@ class PeripheryCli < Formula
 
   test do
     system bin/"periphery", "version"
+    assert_path_exists libexec/"retention.map"
+    assert_equal "PRTM", (libexec/"retention.map").binread(4)
     assert_path_exists doc/"LICENSE.md"
     assert_path_exists doc/"THIRD_PARTY_NOTICES.txt"
 
     if OS.mac?
-      assert_includes (bin/"periphery").rpaths, "#{MacOS::CLT::PKG_PATH}/usr/lib"
-      refute_path_exists bin/"libIndexStore.dylib"
-      system "codesign", "--verify", "--strict", bin/"periphery"
+      assert_path_exists libexec/"libswiftDemangle.dylib"
+      assert_includes (libexec/"periphery").rpaths, "#{MacOS::CLT::PKG_PATH}/usr/lib"
+      refute_path_exists libexec/"libIndexStore.dylib"
+      system "codesign", "--verify", "--strict", libexec/"periphery"
     end
   end
 end
