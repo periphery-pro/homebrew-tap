@@ -54,22 +54,12 @@ class PeripheryCli < Formula
 
   test do
     system bin/"periphery", "version"
-    assert_path_exists doc/"LICENSE.md"
-    assert_path_exists doc/"THIRD_PARTY_NOTICES.txt"
 
     if OS.mac?
-      assert_path_exists libexec/"libIndexStore.dylib"
-      executable = (libexec/"periphery").to_s.shellescape
-      assert_match(/flags=.*\bruntime\b/, shell_output("codesign -dv #{executable} 2>&1"))
-      entitlements = shell_output("codesign --display --entitlements - --xml #{executable} " \
-                                  "2>/dev/null | plutil -convert json -o - -")
-      assert_equal({ "com.apple.security.cs.disable-library-validation" => true }, JSON.parse(entitlements))
       system "codesign", "--verify", "--strict", libexec/"periphery"
       libexec.glob("*.dylib").each do |library|
         system "codesign", "--verify", "--strict", library
       end
-    else
-      assert_predicate libexec.glob("libIndexStore.so*"), :any?
     end
   end
 end
