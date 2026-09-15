@@ -3,7 +3,6 @@ class PeripheryCli < Formula
   homepage "https://periphery.pro"
   version "1.0.0.beta.5"
   license :cannot_represent
-  revision 1
 
   on_macos do
     if Hardware::CPU.arm?
@@ -28,14 +27,20 @@ class PeripheryCli < Formula
   conflicts_with "periphery"
 
   def install
-    libexec.install "periphery"
-    libexec.install Dir["libIndexStore.*"]
-    bin.install_symlink libexec/"periphery"
-
     if OS.mac?
-      # Homebrew rewrites and ad-hoc signs the bundled libraries. Drop hardened
-      # runtime library validation so the executable can load those libraries.
-      system "codesign", "--force", "--sign", "-", "--options=0", libexec/"periphery"
+      odie <<~EOS unless MacOS::CLT.installed?
+        Periphery requires the Xcode Command Line Tools at #{MacOS::CLT::PKG_PATH}.
+        Install them with:
+          xcode-select --install
+      EOS
+
+      bin.install "periphery"
+      MachO::Tools.add_rpath bin/"periphery", "#{MacOS::CLT::PKG_PATH}/usr/lib"
+      system "codesign", "--force", "--sign", "-",
+             "--preserve-metadata=entitlements,flags,runtime", bin/"periphery"
+    else
+      bin.install "periphery"
+      bin.install Dir["libIndexStore.*"]
     end
 
     doc.install "LICENSE.md", "THIRD_PARTY_NOTICES.txt"
@@ -47,14 +52,9 @@ class PeripheryCli < Formula
     assert_path_exists doc/"THIRD_PARTY_NOTICES.txt"
 
     if OS.mac?
-      assert_path_exists libexec/"libIndexStore.dylib"
-      refute_includes (libexec/"periphery").rpaths, "/Library/Developer/CommandLineTools/usr/lib"
-      system "codesign", "--verify", "--strict", libexec/"periphery"
-      libexec.glob("*.dylib").each do |library|
-        system "codesign", "--verify", "--strict", library
-      end
-    else
-      assert_predicate libexec.glob("libIndexStore.so*"), :any?
+      assert_includes (bin/"periphery").rpaths, "#{MacOS::CLT::PKG_PATH}/usr/lib"
+      refute_path_exists bin/"libIndexStore.dylib"
+      system "codesign", "--verify", "--strict", bin/"periphery"
     end
   end
 end
