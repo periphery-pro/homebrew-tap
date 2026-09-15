@@ -17,7 +17,7 @@ You can also install in one command:
 brew install periphery-pro/tap/periphery-cli
 ```
 
-The formula installs the `periphery` executable.
+The formula installs the `periphery` executable with its bundled runtime libraries. On macOS, Periphery does not require the standalone Command Line Tools package for runtime library loading. You still need the build tools required by your project, such as Xcode for Xcode projects. Homebrew may also require developer tools during installation.
 
 ## Upgrade
 
