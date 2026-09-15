@@ -28,7 +28,7 @@ class PeripheryCli < Formula
 
   def install
     libexec.install "periphery"
-    libexec.install Dir["libIndexStore.*", "libswiftDemangle.*", "retention.map"]
+    libexec.install Dir["libIndexStore.*"]
     bin.install_symlink libexec/"periphery"
 
     if OS.mac?
