@@ -32,9 +32,21 @@ class PeripheryCli < Formula
     bin.install_symlink libexec/"periphery"
 
     if OS.mac?
-      # Homebrew rewrites and ad-hoc signs the bundled libraries. Drop hardened
-      # runtime library validation so the executable can load those libraries.
-      system "codesign", "--force", "--sign", "-", "--options=0", libexec/"periphery"
+      # Homebrew ad-hoc signs the bundled libraries. Allow loading them while
+      # retaining the other hardened runtime protections.
+      entitlements = buildpath/"periphery.entitlements.plist"
+      entitlements.write <<~XML
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+          <dict>
+            <key>com.apple.security.cs.disable-library-validation</key>
+            <true/>
+          </dict>
+        </plist>
+      XML
+      system "codesign", "--force", "--sign", "-", "--options=runtime",
+             "--entitlements", entitlements, libexec/"periphery"
     end
 
     doc.install "LICENSE.md", "THIRD_PARTY_NOTICES.txt"
@@ -48,6 +60,10 @@ class PeripheryCli < Formula
     if OS.mac?
       assert_path_exists libexec/"libIndexStore.dylib"
       refute_includes (libexec/"periphery").rpaths, "/Library/Developer/CommandLineTools/usr/lib"
+      assert_match(/flags=.*\bruntime\b/, shell_output("codesign -dv #{(libexec/"periphery").to_s.shellescape} 2>&1"))
+      entitlements = shell_output("codesign --display --entitlements - --xml #{(libexec/"periphery").to_s.shellescape} " \
+                                  "2>/dev/null | plutil -convert json -o - -")
+      assert_equal({ "com.apple.security.cs.disable-library-validation" => true }, JSON.parse(entitlements))
       system "codesign", "--verify", "--strict", libexec/"periphery"
       libexec.glob("*.dylib").each do |library|
         system "codesign", "--verify", "--strict", library
