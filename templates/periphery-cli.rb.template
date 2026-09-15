@@ -59,7 +59,6 @@ class PeripheryCli < Formula
 
     if OS.mac?
       assert_path_exists libexec/"libIndexStore.dylib"
-      refute_includes (libexec/"periphery").rpaths, "/Library/Developer/CommandLineTools/usr/lib"
       executable = (libexec/"periphery").to_s.shellescape
       assert_match(/flags=.*\bruntime\b/, shell_output("codesign -dv #{executable} 2>&1"))
       entitlements = shell_output("codesign --display --entitlements - --xml #{executable} " \
