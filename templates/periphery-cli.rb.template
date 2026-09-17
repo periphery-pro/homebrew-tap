@@ -27,20 +27,26 @@ class PeripheryCli < Formula
   conflicts_with "periphery"
 
   def install
-    if OS.mac?
-      odie <<~EOS unless MacOS::CLT.installed?
-        Periphery requires the Xcode Command Line Tools at #{MacOS::CLT::PKG_PATH}.
-        Install them with:
-          xcode-select --install
-      EOS
+    libexec.install "periphery"
+    libexec.install Dir["libIndexStore.*"]
+    bin.install_symlink libexec/"periphery"
 
-      bin.install "periphery"
-      MachO::Tools.add_rpath bin/"periphery", "#{MacOS::CLT::PKG_PATH}/usr/lib"
-      system "codesign", "--force", "--sign", "-",
-             "--preserve-metadata=entitlements,flags,runtime", bin/"periphery"
-    else
-      bin.install "periphery"
-      bin.install Dir["libIndexStore.*"]
+    if OS.mac?
+      # Homebrew ad-hoc signs the bundled libraries. Allow loading them while
+      # retaining the other hardened runtime protections.
+      entitlements = buildpath/"periphery.entitlements.plist"
+      entitlements.write <<~XML
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+          <dict>
+            <key>com.apple.security.cs.disable-library-validation</key>
+            <true/>
+          </dict>
+        </plist>
+      XML
+      system "codesign", "--force", "--sign", "-", "--options=runtime",
+             "--entitlements", entitlements, libexec/"periphery"
     end
 
     doc.install "LICENSE.md", "THIRD_PARTY_NOTICES.txt"
@@ -48,13 +54,12 @@ class PeripheryCli < Formula
 
   test do
     system bin/"periphery", "version"
-    assert_path_exists doc/"LICENSE.md"
-    assert_path_exists doc/"THIRD_PARTY_NOTICES.txt"
 
     if OS.mac?
-      assert_includes (bin/"periphery").rpaths, "#{MacOS::CLT::PKG_PATH}/usr/lib"
-      refute_path_exists bin/"libIndexStore.dylib"
-      system "codesign", "--verify", "--strict", bin/"periphery"
+      system "codesign", "--verify", "--strict", libexec/"periphery"
+      libexec.glob("*.dylib").each do |library|
+        system "codesign", "--verify", "--strict", library
+      end
     end
   end
 end

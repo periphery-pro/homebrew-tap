@@ -17,7 +17,7 @@ You can also install in one command:
 brew install periphery-pro/tap/periphery-cli
 ```
 
-The formula installs the `periphery` executable.
+The formula installs the `periphery` executable with its bundled runtime libraries.
 
 ## Upgrade
 
