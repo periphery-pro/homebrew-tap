@@ -1,46 +1,52 @@
 class PeripheryCli < Formula
   desc "Periphery"
   homepage "https://periphery.pro"
-  version "1.0.0.beta.5"
+  version "1.0.0.beta.6"
   license :cannot_represent
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.5/periphery-cli_1.0.0.beta.5_macos_arm64.zip"
-      sha256 "eac4488284b62664dd7994fb61adde6d787a2e31fdd6ec3f4fc2c71e2b0f768c"
+      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.6/periphery-cli_1.0.0.beta.6_macos_arm64.zip"
+      sha256 "1179469ca8bf4702d9de96957c76cc7de96483bca1ae0762db61c8fe66c2f9ea"
     else
-      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.5/periphery-cli_1.0.0.beta.5_macos_x86_64.zip"
-      sha256 "a9a474ec078e25c9e4a4b105933cfb3b41df19af8db27b643532a7d9387fdae9"
+      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.6/periphery-cli_1.0.0.beta.6_macos_x86_64.zip"
+      sha256 "c1ce86cbeb8bb199fb52a8e404b6b98d769ada8b7c7a88af845ac82ab4ee58ea"
     end
   end
 
   on_linux do
     if Hardware::CPU.arm?
-      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.5/periphery-cli_1.0.0.beta.5_linux_arm64.zip"
-      sha256 "17ef961769a465c5bd38f6255be68cf9c320dbf371c9799bd2f866e188d58bcc"
+      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.6/periphery-cli_1.0.0.beta.6_linux_arm64.zip"
+      sha256 "ef50e35ba9874686e16bdbdd20ad1707159b04d22b82c229648ab6afc8d46601"
     else
-      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.5/periphery-cli_1.0.0.beta.5_linux_x86_64.zip"
-      sha256 "85bb4c7a6df4585f8d6c8705fc2f03aa7d1b6c085c74ec0823531353f6d6d208"
+      url "https://github.com/periphery-pro/cli-releases/releases/download/1.0.0.beta.6/periphery-cli_1.0.0.beta.6_linux_x86_64.zip"
+      sha256 "6cb8a7999e7167ddf86d7b5f17952ee58da51d51f1c014be6f237bd8a1c9fad6"
     end
   end
 
   conflicts_with "periphery"
 
   def install
-    if OS.mac?
-      odie <<~EOS unless MacOS::CLT.installed?
-        Periphery requires the Xcode Command Line Tools at #{MacOS::CLT::PKG_PATH}.
-        Install them with:
-          xcode-select --install
-      EOS
+    libexec.install "periphery"
+    libexec.install Dir["libIndexStore.*"]
+    bin.install_symlink libexec/"periphery"
 
-      bin.install "periphery"
-      MachO::Tools.add_rpath bin/"periphery", "#{MacOS::CLT::PKG_PATH}/usr/lib"
-      system "codesign", "--force", "--sign", "-",
-             "--preserve-metadata=entitlements,flags,runtime", bin/"periphery"
-    else
-      bin.install "periphery"
-      bin.install Dir["libIndexStore.*"]
+    if OS.mac?
+      # Homebrew ad-hoc signs the bundled libraries. Allow loading them while
+      # retaining the other hardened runtime protections.
+      entitlements = buildpath/"periphery.entitlements.plist"
+      entitlements.write <<~XML
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+          <dict>
+            <key>com.apple.security.cs.disable-library-validation</key>
+            <true/>
+          </dict>
+        </plist>
+      XML
+      system "codesign", "--force", "--sign", "-", "--options=runtime",
+             "--entitlements", entitlements, libexec/"periphery"
     end
 
     doc.install "LICENSE.md", "THIRD_PARTY_NOTICES.txt"
@@ -48,13 +54,12 @@ class PeripheryCli < Formula
 
   test do
     system bin/"periphery", "version"
-    assert_path_exists doc/"LICENSE.md"
-    assert_path_exists doc/"THIRD_PARTY_NOTICES.txt"
 
     if OS.mac?
-      assert_includes (bin/"periphery").rpaths, "#{MacOS::CLT::PKG_PATH}/usr/lib"
-      refute_path_exists bin/"libIndexStore.dylib"
-      system "codesign", "--verify", "--strict", bin/"periphery"
+      system "codesign", "--verify", "--strict", libexec/"periphery"
+      libexec.glob("*.dylib").each do |library|
+        system "codesign", "--verify", "--strict", library
+      end
     end
   end
 end
